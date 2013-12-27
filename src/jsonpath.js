@@ -57,11 +57,17 @@ function jsonPath(obj, expr, arg) {
                     P.trace(P.eval(loc, val) + ";" + x, val, path);
                 }
                 else if (/^\?\(.*?\)$/.test(loc)) {
-                    P.walk(loc, x, val, path, function (m, l, x, v, p) {
-                        if (P.eval(l.replace(/^\?\((.*?)\)$/, "$1"), v instanceof Array ? v[m] : v)) {
-                            P.trace(m + ";" + x, v, p);
+                    if (val instanceof Array) {
+                        P.walk(loc, x, val, path, function (m, l, x, v, p) {
+                            if (P.eval(l.replace(/^\?\((.*?)\)$/, "$1"), v[m])) {
+                                P.trace(m + ";" + x, v, p);
+                            }
+                        });
+                    } else if (typeof val === "object") {
+                        if (P.eval(loc.replace(/^\?\((.*?)\)$/, "$1"), val)) {
+                            P.trace(x, val, path);
                         }
-                    });
+                    }
                 }
                 else if (/^(-?[0-9]*):(-?[0-9]*):?([0-9]*)$/.test(loc)) {
                     P.slice(loc, x, val, path);
@@ -112,10 +118,14 @@ function jsonPath(obj, expr, arg) {
         },
         eval: function (x, _v) {
             try {
-                return $ && _v && eval(x.replace(/(^|[^\\])@/g, "$1_v").replace(/\\@/g, "@"));
+                return $ && _v && eval(x.replace(/(@|'[^']+')/g, function (match, where) {
+                    return where[0] !== '\'' ? "_v" : match;
+                }));
             }
             catch (e) {
-                throw new SyntaxError("jsonPath: " + e.message + ": " + x.replace(/(^|[^\\])@/g, "$1_v").replace(/\\@/g, "@"));
+                throw new SyntaxError("jsonPath: " + e.message + ": " + x.replace(/(@|'[^']+')/g, function (match, where) {
+                    return where[0] !== '\'' ? "_v" : match;
+                }));
             }
         }
     };
