@@ -1,138 +1,150 @@
 /* JSONPath 0.8.5 - XPath for JSON
  *
  * Copyright (c) 2007 Stefan Goessner (goessner.net)
- * Licensed under the MIT (MIT-LICENSE.txt) licence.
+ * Licensed under the MIT licence.
  */
 
-function jsonPath(obj, expr, arg) {
-    var P = {
-        resultType: arg && arg.resultType || "VALUE",
-        result: [],
-        normalize: function (expr) {
-            var subx = [];
-            return expr.replace(/[\['](\??\(.*?\))[\]']|\['(.*?)'\]/g, function ($0, $1, $2) {
-                return "[#" + (subx.push($1 || $2) - 1) + "]";
-            })
-                .replace(/'?\.'?|\['?/g, ";")
-                .replace(/;;;|;;/g, ";..;")
-                .replace(/;$|'?\]|'$/g, "")
-                .replace(/#([0-9]+)/g, function ($0, $1) {
-                    return subx[$1];
+var jsonPath = (function () {
+    var options = {
+            resultType: "VALUE"
+        },
+        result,
+        $;
+
+    function normalize(expr) {
+        var subx = [];
+        return expr.replace(/[\['](\??\(.*?\))[\]']|\['(.*?)'\]/g, function ($0, $1, $2) {
+            return "[#" + (subx.push($1 || $2) - 1) + "]";
+        })
+            .replace(/'?\.'?|\['?/g, ";")
+            .replace(/;;;|;;/g, ";..;")
+            .replace(/;$|'?\]|'$/g, "")
+            .replace(/#([0-9]+)/g, function ($0, $1) {
+                return subx[$1];
+            });
+    }
+
+    function asPath(path) {
+        var x = path.split(";"),
+            p = "$";
+        for (var i = 1, n = x.length; i < n; i++) {
+            p += /^[0-9*]+$/.test(x[i]) ? ("[" + x[i] + "]") : ("['" + x[i] + "']");
+        }
+        return p;
+    }
+
+    function store(p, v) {
+        if (p) {
+            result[result.length] = options.resultType === "PATH" ? asPath(p) : v;
+        }
+        return !!p;
+    }
+
+    function trace(expr, val, path) {
+        if (expr !== "") {
+            var x = expr.split(";"),
+                loc = x.shift();
+            x = x.join(";");
+            if (val && val.hasOwnProperty(loc)) {
+                trace(x, val[loc], path + ";" + loc);
+            }
+            else if (loc === "*") {
+                walk(loc, x, val, path, function (m, l, x, v, p) {
+                    trace(m + ";" + x, v, p);
                 });
-        },
-        asPath: function (path) {
-            var x = path.split(";"),
-                p = "$";
-            for (var i = 1, n = x.length; i < n; i++) {
-                p += /^[0-9*]+$/.test(x[i]) ? ("[" + x[i] + "]") : ("['" + x[i] + "']");
             }
-            return p;
-        },
-        store: function (p, v) {
-            if (p) {
-                P.result[P.result.length] = P.resultType === "PATH" ? P.asPath(p) : v;
+            else if (loc === "..") {
+                trace(x, val, path);
+                walk(loc, x, val, path, function (m, l, x, v, p) {
+                    return typeof v[m] === "object" && trace("..;" + x, v[m], p + ";" + m);
+                });
             }
-            return !!p;
-        },
-        trace: function (expr, val, path) {
-            if (expr !== "") {
-                var x = expr.split(";"),
-                    loc = x.shift();
-                x = x.join(";");
-                if (val && val.hasOwnProperty(loc)) {
-                    P.trace(x, val[loc], path + ";" + loc);
-                }
-                else if (loc === "*") {
-                    P.walk(loc, x, val, path, function (m, l, x, v, p) {
-                        P.trace(m + ";" + x, v, p);
-                    });
-                }
-                else if (loc === "..") {
-                    P.trace(x, val, path);
-                    P.walk(loc, x, val, path, function (m, l, x, v, p) {
-                        return typeof v[m] === "object" && P.trace("..;" + x, v[m], p + ";" + m);
-                    });
-                }
-                else if (/^\(.*?\)$/.test(loc)) {
-                    P.trace(P.eval(loc, val) + ";" + x, val, path);
-                }
-                else if (/^\?\(.*?\)$/.test(loc)) {
-                    if (val instanceof Array) {
-                        P.walk(loc, x, val, path, function (m, l, x, v, p) {
-                            if (P.eval(l.replace(/^\?\((.*?)\)$/, "$1"), v[m])) {
-                                P.trace(m + ";" + x, v, p);
-                            }
-                        });
-                    } else if (typeof val === "object") {
-                        if (P.eval(loc.replace(/^\?\((.*?)\)$/, "$1"), val)) {
-                            P.trace(x, val, path);
+            else if (/^\(.*?\)$/.test(loc)) {
+                trace(protectedEval(loc, val) + ";" + x, val, path);
+            }
+            else if (/^\?\(.*?\)$/.test(loc)) {
+                if (val instanceof Array) {
+                    walk(loc, x, val, path, function (m, l, x, v, p) {
+                        if (protectedEval(l.replace(/^\?\((.*?)\)$/, "$1"), v[m])) {
+                            trace(m + ";" + x, v, p);
                         }
-                    }
-                }
-                else if (/^(-?[0-9]*):(-?[0-9]*):?([0-9]*)$/.test(loc)) {
-                    P.slice(loc, x, val, path);
-                }
-                else if (/,/.test(loc)) {
-                    for (var s = loc.split(/'?,'?/), i = 0, n = s.length; i < n; i++) {
-                        P.trace(s[i] + ";" + x, val, path);
+                    });
+                } else if (typeof val === "object") {
+                    if (protectedEval(loc.replace(/^\?\((.*?)\)$/, "$1"), val)) {
+                        trace(x, val, path);
                     }
                 }
             }
-            else {
-                P.store(path, val);
+            else if (/^(-?[0-9]*):(-?[0-9]*):?([0-9]*)$/.test(loc)) {
+                slice(loc, x, val, path);
             }
-        },
-        walk: function (loc, expr, val, path, f) {
-            if (val instanceof Array) {
-                for (var i = 0, n = val.length; i < n; i++) {
-                    if (i in val) {
-                        f(i, loc, expr, val, path);
-                    }
+            else if (/,/.test(loc)) {
+                for (var s = loc.split(/'?,'?/), i = 0, n = s.length; i < n; i++) {
+                    trace(s[i] + ";" + x, val, path);
                 }
-            }
-            else if (typeof val === "object") {
-                for (var m in val) {
-                    if (val.hasOwnProperty(m)) {
-                        f(m, loc, expr, val, path);
-                    }
-                }
-            }
-        },
-        slice: function (loc, expr, val, path) {
-            if (val instanceof Array) {
-                var len = val.length,
-                    start = 0,
-                    end = len,
-                    step = 1;
-                loc.replace(/^(-?[0-9]*):(-?[0-9]*):?(-?[0-9]*)$/g, function ($0, $1, $2, $3) {
-                    start = parseInt($1 || start, 10);
-                    end = parseInt($2 || end, 10);
-                    step = parseInt($3 || step, 10);
-                });
-                start = (start < 0) ? Math.max(0, start + len) : Math.min(len, start);
-                end = (end < 0) ? Math.max(0, end + len) : Math.min(len, end);
-                for (var i = start; i < end; i += step) {
-                    P.trace(i + ";" + expr, val, path);
-                }
-            }
-        },
-        eval: function (x, _v) {
-            try {
-                return $ && _v && eval(x.replace(/(@|'[^']+')/g, function (match, where) {
-                    return where[0] !== '\'' ? "_v" : match;
-                }));
-            }
-            catch (e) {
-                throw new SyntaxError("jsonPath: " + e.message + ": " + x.replace(/(@|'[^']+')/g, function (match, where) {
-                    return where[0] !== '\'' ? "_v" : match;
-                }));
             }
         }
-    };
-
-    var $ = obj;
-    if (expr && obj && (P.resultType == "VALUE" || P.resultType == "PATH")) {
-        P.trace(P.normalize(expr).replace(/^\$;?/, ""), obj, "$");
-        return P.result.length ? P.result : false;
+        else {
+            store(path, val);
+        }
     }
-} 
+
+    function walk(loc, expr, val, path, f) {
+        if (val instanceof Array) {
+            for (var i = 0, n = val.length; i < n; i++) {
+                if (i in val) {
+                    f(i, loc, expr, val, path);
+                }
+            }
+        }
+        else if (typeof val === "object") {
+            for (var m in val) {
+                if (val.hasOwnProperty(m)) {
+                    f(m, loc, expr, val, path);
+                }
+            }
+        }
+    }
+
+    function slice(loc, expr, val, path) {
+        if (val instanceof Array) {
+            var len = val.length,
+                start = 0,
+                end = len,
+                step = 1;
+            loc.replace(/^(-?[0-9]*):(-?[0-9]*):?(-?[0-9]*)$/g, function ($0, $1, $2, $3) {
+                start = parseInt($1 || start, 10);
+                end = parseInt($2 || end, 10);
+                step = parseInt($3 || step, 10);
+            });
+            start = (start < 0) ? Math.max(0, start + len) : Math.min(len, start);
+            end = (end < 0) ? Math.max(0, end + len) : Math.min(len, end);
+            for (var i = start; i < end; i += step) {
+                trace(i + ";" + expr, val, path);
+            }
+        }
+    }
+
+    function protectedEval(x, _v) {
+        try {
+            return $ && _v && eval(x.replace(/(@|'[^']+')/g, function (match, where) {
+                return where[0] !== '\'' ? "_v" : match;
+            }));
+        }
+        catch (e) {
+            throw new SyntaxError("jsonPath: " + e.message + ": " + x.replace(/(@|'[^']+')/g, function (match, where) {
+                return where[0] !== '\'' ? "_v" : match;
+            }));
+        }
+    }
+
+    return function (obj, expr, arg) {
+        options = arg || options;
+        result = [];
+        if (obj && expr) {
+            $ = obj;
+            trace(normalize(expr).replace(/^\$;?/, ""), obj, "$");
+            return result.length ? result : false;
+        }
+    }
+})();
