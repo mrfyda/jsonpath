@@ -4,8 +4,6 @@
  * Licensed under the MIT licence.
  */
 
-/* global jsonPath */
-
 "use strict";
 
 var jsonPath = (function () {
