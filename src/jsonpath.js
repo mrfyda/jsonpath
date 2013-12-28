@@ -146,8 +146,8 @@
         if (obj && expr) {
             $ = obj;
             trace(normalize(expr).replace(/^\$;?/, ""), obj, "$");
-            return result.length ? result : false;
         }
+        return result.length ? result : false;
     }
 
     window.jsonPath = jsonPath;
