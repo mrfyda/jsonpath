@@ -86,7 +86,7 @@ var suite =
                     { "expr": "$.'c d'", "paths": ["$['c d']"], "values": ["e"]},
                     { "expr": "$.*", "paths": ["$['a']", "$['b']", "$['c d']"], "values": ["a", "b", "e"]},
                     { "expr": "$['*']", "paths": ["$['a']", "$['b']", "$['c d']"], "values": ["a", "b", "e"]},
-                    { "expr": "$[*]", "paths": ["$['a']", "$['b']", "$['c d']"], "values": ["a", "b", "e"]},
+                    { "expr": "$[*]", "paths": ["$['a']", "$['b']", "$['c d']"], "values": ["a", "b", "e"]}
                 ]
             },
             {
@@ -424,12 +424,10 @@ var suite =
                         {"category": "fiction", "author": "Evelyn Waugh", "title": "Sword of Honour", "price": 12.99},
                         {"category": "fiction", "author": "J. R. R. Tolkien", "title": "The Lord of the Rings", "isbn": "0-395-19395-8", "price": 22.99}
                     ]
-                    },
+                    }
                 ]
             }
         ];
-
-function evaluate($, p) { var res = eval(p); return res != null ? JSON.stringify(res) : null; }
 
 for (var i = 0; i < suite.length; i++) {
     var testName = "Test&nbsp;#" + i;
