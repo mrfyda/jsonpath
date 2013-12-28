@@ -184,19 +184,8 @@ var suite =
                     pnt: {x: 0, y: 7 }
                 },
                 "tests": [
-                    { "expr": "$.'?(@.color)'.x", "paths": [], "values": []},
-                    { "expr": "$['lin','cir'].color", "paths": ["$['lin']['color']", "$['cir']['color']"], "values": ["red", "blue"]}
-                ]
-            },
-            {
-                "data": {
-                    lin: {color: "red", x: 2, y: 3},
-                    cir: {color: "blue", x: 5, y: 2, r: 1 },
-                    arc: {color: "green", x: 2, y: 4, r: 2, phi0: 30, dphi: 120 },
-                    pnt: {x: 0, y: 7 }
-                },
-                "tests": [
-                    { "expr": "$.'?(@.color)'.x", "paths": [], "values": []},
+                    { "expr": "$.'?(@.color)'.x", "paths": ["$['lin']['x']", "$['cir']['x']", "$['arc']['x']"], "values": [2, 5, 2]},
+                    { "expr": "$['lin','cir'].color", "paths": ["$['lin']['color']", "$['cir']['color']"], "values": ["red", "blue"]},
                     { "expr": "$['lin','arc'].color", "paths": ["$['lin']['color']", "$['arc']['color']"], "values": ["red", "green"]}
                 ]
             },
