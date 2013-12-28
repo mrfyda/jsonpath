@@ -95,9 +95,9 @@ var suite =
                 ],
                 "tests": [
                     { "expr": "$[0]", "paths": ["$[0]"], "values": [1]},
-                    { "expr": "$[4]", "paths": ["$[4]"], "values": [undefined]},
+                    { "expr": "$[4]", "paths": ["$[4]"], "values": [null]},
                     { "expr": "$[*]", "paths": ["$[0]", "$[1]", "$[2]", "$[3]", "$[4]"], "values": [1, "2", 3.14, true, null]},
-                    { "expr": "$[-1:]", "paths": ["$[4]"], "values": [undefined]}
+                    { "expr": "$[-1:]", "paths": ["$[4]"], "values": [null]}
                 ]
             },
             {
@@ -115,7 +115,7 @@ var suite =
                     { "expr": "$.points[1]", "paths": ["$['points'][1]"], "values": [
                         {"id": "i2", "x": -2, "y": 2, "z": 1}
                     ]},
-                    { "expr": "$.points[4].x", "comment": "The value lookup via '.x' syntax is failing - since 0.8.5?", "paths": ["$['points'][4]['x']"], "values": [0]},
+                    { "expr": "$.points[4].x", "paths": ["$['points'][4]['x']"], "values": [0]},
                     { "expr": "$.points[?(@.id=='i4')].x", "paths": ["$['points'][3]['x']"], "values": [-6]},
                     { "expr": "$.points[?(@.id=='i4')]", "paths": ["$['points'][3]"], "values": [
                         { id: "i4", x: -6, y: -1 }
@@ -459,7 +459,7 @@ for (var i = 0; i < suite.length; i++) {
         out += "<td>";
         var expecteds = suite[i].tests[j].paths;
         var actuals = jsonPath(suite[i].data, suite[i].tests[j].expr, {resultType: "PATH"});
-        if (actuals == false) {
+        if (actuals === false) {
             actuals = [];
         }
         out += "<table class=\"result\">\n";
@@ -477,7 +477,7 @@ for (var i = 0; i < suite.length; i++) {
                 if (k < actuals.length) {
                     actual = actuals[k];
                 }
-                var pass = (expected == actual);
+                var pass = (expected === actual);
                 allPass = allPass && pass;
                 var result = pass ? "pass" : "fail";
                 out += "<td><pre>" + expected + "</pre></td>\n";
@@ -501,7 +501,7 @@ for (var i = 0; i < suite.length; i++) {
         out += "<td>";
         var expecteds = suite[i].tests[j].values;
         var actuals = jsonPath(suite[i].data, suite[i].tests[j].expr, {resultType: "VALUE"});
-        if (actuals == false) {
+        if (actuals === false) {
             actuals = [];
         }
         out += "<table class=\"result\">\n";
@@ -519,7 +519,7 @@ for (var i = 0; i < suite.length; i++) {
                 if (k < actuals.length) {
                     actual = JSON.stringify(actuals[k]);
                 }
-                var pass = (expected == actual);
+                var pass = (expected === actual);
                 allPass = allPass && pass;
                 var result = pass ? "pass" : "fail";
                 out += "<td><pre>" + expected + "</pre></td>\n";
