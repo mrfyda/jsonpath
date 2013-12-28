@@ -6,7 +6,7 @@
 
 "use strict";
 
-var jsonPath = (function () {
+(function (window) {
     var options = {
             resultType: "VALUE"
         },
@@ -140,7 +140,7 @@ var jsonPath = (function () {
         }
     }
 
-    return function (obj, expr, arg) {
+    function jsonPath(obj, expr, arg) {
         options = arg || options;
         result = [];
         if (obj && expr) {
@@ -148,5 +148,8 @@ var jsonPath = (function () {
             trace(normalize(expr).replace(/^\$;?/, ""), obj, "$");
             return result.length ? result : false;
         }
-    };
-})();
+    }
+
+    window.jsonPath = jsonPath;
+    return window.jsonPath;
+})(window);
