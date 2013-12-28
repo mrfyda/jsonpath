@@ -4,6 +4,10 @@
  * Licensed under the MIT licence.
  */
 
+/* global jsonPath */
+
+"use strict";
+
 var jsonPath = (function () {
     var options = {
             resultType: "VALUE"
@@ -146,5 +150,5 @@ var jsonPath = (function () {
             trace(normalize(expr).replace(/^\$;?/, ""), obj, "$");
             return result.length ? result : false;
         }
-    }
+    };
 })();
