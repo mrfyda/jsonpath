@@ -4,9 +4,9 @@
  * Licensed under the MIT licence.
  */
 
-"use strict";
-
 var jsonPath = (function () {
+    "use strict";
+
     var options = {
             resultType: "VALUE"
         },
